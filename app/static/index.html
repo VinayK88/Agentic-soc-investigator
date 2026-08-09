@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Agentic SOC Investigator</title>
+<style>
+body{font-family:ui-sans-serif,system-ui,-apple-system;margin:0;background:#0b1020;color:#e8eefc}.wrap{max-width:1050px;margin:auto;padding:38px 22px}.hero{background:#121936;border:1px solid #27325d;border-radius:18px;padding:28px}.badge{display:inline-block;padding:5px 10px;border:1px solid #44538a;border-radius:999px;font-size:12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.card{background:#121936;border:1px solid #27325d;border-radius:14px;padding:18px}button{background:#e8eefc;color:#0b1020;border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer}pre{white-space:pre-wrap;background:#080c18;padding:15px;border-radius:12px;overflow:auto}.risk{font-size:42px;font-weight:800}.muted{color:#aab6dc}@media(max-width:760px){.grid{grid-template-columns:1fr}}</style>
+</head>
+<body><div class="wrap">
+<div class="hero"><span class="badge">Defensive simulation MVP</span><h1>Agentic SOC Investigator</h1><p class="muted">From alert → hypotheses → tool queries → evidence → MITRE ATT&CK → confidence → remediation.</p><button onclick="runDemo()">Run investigation</button></div>
+<div class="grid"><div class="card"><h3>Verdict</h3><div id="risk" class="risk">—</div><div id="verdict" class="muted">Run the demo.</div></div><div class="card"><h3>Top hypothesis</h3><div id="hyp">—</div></div></div>
+<div class="card" style="margin-top:16px"><h3>Investigation report</h3><pre id="out">Waiting...</pre></div>
+</div>
+<script>
+async function runDemo(){
+ const alert=await (await fetch('/demo-alert')).json();
+ const res=await fetch('/investigate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(alert)});
+ const r=await res.json();
+ document.getElementById('risk').textContent=r.risk_score+'/100';
+ document.getElementById('verdict').textContent=r.verdict.replaceAll('_',' ');
+ const sorted=[...r.hypotheses].sort((a,b)=>b.confidence-a.confidence);
+ document.getElementById('hyp').textContent=sorted[0].name+' — '+Math.round(sorted[0].confidence*100)+'%';
+ document.getElementById('out').textContent=JSON.stringify(r,null,2);
+}
+</script></body></html>

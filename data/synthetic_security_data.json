@@ -1,0 +1,19 @@
+{
+  "identity_events": [
+    {"timestamp":"2026-08-09T10:30:00Z","user":"maya.chen@contoso.example","type":"impossible_travel","from":"Austin","to":"Bucharest","minutes":19},
+    {"timestamp":"2026-08-09T10:31:00Z","user":"maya.chen@contoso.example","type":"mfa_reset","method":"Authenticator app"},
+    {"timestamp":"2026-08-08T16:00:00Z","user":"alex.ross@contoso.example","type":"known_vpn","egress":"198.51.100.22"}
+  ],
+  "siem_events": [
+    {"timestamp":"2026-08-09T10:34:00Z","user":"maya.chen@contoso.example","src_ip":"203.0.113.66","type":"signin","app":"Microsoft 365"},
+    {"timestamp":"2026-08-09T10:39:00Z","user":"maya.chen@contoso.example","src_ip":"203.0.113.66","type":"mass_download","resource":"M&A SharePoint","objects":1482}
+  ],
+  "edr_events": [
+    {"timestamp":"2026-08-09T10:37:00Z","device":"FIN-LT-044","type":"suspicious_powershell","command":"powershell -enc <redacted-synthetic-payload>"},
+    {"timestamp":"2026-08-09T10:38:00Z","device":"FIN-LT-044","type":"credential_access","signal":"LSASS access heuristic"}
+  ],
+  "threat_intel": {
+    "203.0.113.66": {"reputation":"malicious","score":92,"tags":["credential-theft","cloud-abuse"]},
+    "198.51.100.22": {"reputation":"benign","score":3,"tags":["corporate-vpn"]}
+  }
+}
