@@ -1,29 +1,58 @@
 from __future__ import annotations
 
-from pathlib import Path
-import json
+from typing import Iterable, List
+
+from .models import Scenario, SecurityEvent
 
 
-DATA_PATH = Path(__file__).resolve().parents[1] / "data" / "synthetic_security_data.json"
+class ScenarioToolbox:
+    """Read-only security tools backed by one reproducible scenario."""
 
+    def __init__(self, scenario: Scenario):
+        self.scenario = scenario
 
-class SecurityToolbox:
-    """Read-only defensive tools backed by synthetic telemetry."""
+    def query_identity(self, user: str) -> List[SecurityEvent]:
+        return self._query({"entra", "identity"}, user=user)
 
-    def __init__(self, data_path: Path = DATA_PATH):
-        self.data = json.loads(data_path.read_text())
+    def query_endpoint(self, device: str) -> List[SecurityEvent]:
+        return self._query({"endpoint", "edr"}, device=device)
 
-    def query_siem(self, user: str, src_ip: str) -> list[dict]:
-        return [
-            event for event in self.data["siem_events"]
-            if event.get("user") == user or event.get("src_ip") == src_ip
-        ]
+    def query_cloud(self, user: str = "", application: str = "") -> List[SecurityEvent]:
+        return self._query({"cloud", "saas"}, user=user, application=application)
 
-    def query_edr(self, device: str) -> list[dict]:
-        return [event for event in self.data["edr_events"] if event.get("device") == device]
+    def query_network(self, src_ip: str = "", device: str = "") -> List[SecurityEvent]:
+        return self._query({"network", "dns", "proxy"}, src_ip=src_ip, device=device)
 
-    def query_identity(self, user: str) -> list[dict]:
-        return [event for event in self.data["identity_events"] if event.get("user") == user]
+    def query_all(self) -> List[SecurityEvent]:
+        return list(self.scenario.events)
 
-    def lookup_ip(self, ip: str) -> dict:
-        return self.data["threat_intel"].get(ip, {"reputation": "unknown", "score": 0, "tags": []})
+    def lookup_ip(self, ip_address: str) -> dict:
+        return self.scenario.threat_intel.get(
+            ip_address,
+            {"reputation": "unknown", "score": 0, "tags": []},
+        )
+
+    def _query(
+        self,
+        sources: Iterable[str],
+        user: str = "",
+        device: str = "",
+        src_ip: str = "",
+        application: str = "",
+    ) -> List[SecurityEvent]:
+        allowed = set(sources)
+        result = []
+        for event in self.scenario.events:
+            if event.source not in allowed:
+                continue
+            if user and event.user != user:
+                continue
+            if device and event.device != device:
+                continue
+            if src_ip and event.src_ip != src_ip:
+                continue
+            if application and event.application != application:
+                continue
+            result.append(event)
+        return result
+
