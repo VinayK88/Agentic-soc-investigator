@@ -1,28 +1,41 @@
+import unittest
+
 from app.engine import InvestigationEngine
-from app.models import Alert
+from app.scenarios import load_scenarios
 
 
-def malicious_alert():
-    return Alert(
-        alert_id="T-1",
-        title="Suspicious identity activity",
-        severity="high",
-        user="maya.chen@contoso.example",
-        device="FIN-LT-044",
-        src_ip="203.0.113.66",
-        timestamp="2026-08-09T10:34:00Z",
-        description="Synthetic test alert",
-    )
+class InvestigationEngineTests(unittest.TestCase):
+    def setUp(self):
+        self.engine = InvestigationEngine()
+
+    def test_all_scenarios_match_ground_truth(self):
+        for scenario in load_scenarios():
+            with self.subTest(scenario=scenario.scenario_id):
+                report = self.engine.investigate(scenario)
+                self.assertEqual(report.verdict, scenario.ground_truth.verdict)
+                self.assertEqual(report.primary_hypothesis, scenario.ground_truth.primary_hypothesis)
+                self.assertEqual(
+                    {item.technique_id for item in report.mitre_attack},
+                    set(scenario.ground_truth.mitre_techniques),
+                )
+
+    def test_citations_are_real_events_and_actions_require_human_approval(self):
+        for scenario in load_scenarios():
+            report = self.engine.investigate(scenario)
+            available = {event.event_id for event in scenario.events}
+            self.assertTrue(set(report.citations) <= available)
+            if report.verdict != "benign":
+                self.assertTrue(any("human analyst approval" in item.lower() for item in report.recommended_actions))
+
+    def test_graph_and_features_are_populated(self):
+        for scenario in load_scenarios():
+            report = self.engine.investigate(scenario)
+            self.assertGreater(report.features.event_count, 0)
+            self.assertGreater(report.graph.node_count, 0)
+            if report.verdict != "benign":
+                self.assertTrue(report.graph.suspicious_paths)
 
 
-def test_detects_high_risk_compromise():
-    report = InvestigationEngine().investigate(malicious_alert())
-    assert report.verdict == "confirmed_compromise"
-    assert report.risk_score >= 75
-    assert any(t.technique_id == "T1078" for t in report.mitre_attack)
-    assert any(h.name == "Account takeover" and h.confidence > 0.8 for h in report.hypotheses)
+if __name__ == "__main__":
+    unittest.main()
 
-
-def test_report_has_human_approval_language():
-    report = InvestigationEngine().investigate(malicious_alert())
-    assert any("human analyst approval" in x.lower() for x in report.recommended_actions)
