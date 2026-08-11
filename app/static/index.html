@@ -1,26 +1,83 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Agentic SOC Investigator</title>
-<style>
-body{font-family:ui-sans-serif,system-ui,-apple-system;margin:0;background:#0b1020;color:#e8eefc}.wrap{max-width:1050px;margin:auto;padding:38px 22px}.hero{background:#121936;border:1px solid #27325d;border-radius:18px;padding:28px}.badge{display:inline-block;padding:5px 10px;border:1px solid #44538a;border-radius:999px;font-size:12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.card{background:#121936;border:1px solid #27325d;border-radius:14px;padding:18px}button{background:#e8eefc;color:#0b1020;border:0;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer}pre{white-space:pre-wrap;background:#080c18;padding:15px;border-radius:12px;overflow:auto}.risk{font-size:42px;font-weight:800}.muted{color:#aab6dc}@media(max-width:760px){.grid{grid-template-columns:1fr}}</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agentic SOC Investigator</title>
+  <style>
+    :root{--bg:#08111f;--panel:#101d31;--line:#263a56;--text:#eef5ff;--muted:#9db0c9;--cyan:#52d6d3;--amber:#ffc857;--red:#ff6b6b}
+    *{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#07101d,#0d1930 55%,#07101d);color:var(--text);font:15px/1.5 Inter,ui-sans-serif,system-ui,sans-serif}
+    .wrap{max-width:1180px;margin:auto;padding:36px 22px 70px}.hero{display:grid;grid-template-columns:1.4fr .6fr;gap:18px;align-items:stretch}
+    .panel{background:rgba(16,29,49,.94);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.24)}
+    .eyebrow{color:var(--cyan);font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:800}h1{font-size:44px;line-height:1.05;margin:12px 0}h2{margin:0 0 12px}p{color:var(--muted)}
+    select,button{width:100%;border-radius:10px;padding:12px 14px;font:inherit}select{background:#091525;color:var(--text);border:1px solid var(--line);margin:8px 0 12px}button{border:0;background:var(--cyan);color:#041015;font-weight:800;cursor:pointer}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}.metric{font-size:34px;font-weight:850}.label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+    .section{margin-top:18px}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.tag{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:5px 9px;margin:3px;color:#c9d8eb}.evidence{border-left:3px solid var(--cyan);padding:9px 12px;margin:9px 0;background:#0b1728}.bad{color:var(--red)}.good{color:var(--cyan)}
+    table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-size:12px}pre{white-space:pre-wrap;background:#07111e;border-radius:12px;padding:14px;max-height:340px;overflow:auto;color:#cfe0f4}
+    @media(max-width:800px){.hero,.two,.grid{grid-template-columns:1fr}h1{font-size:36px}}
+  </style>
 </head>
-<body><div class="wrap">
-<div class="hero"><span class="badge">Defensive simulation MVP</span><h1>Agentic SOC Investigator</h1><p class="muted">From alert → hypotheses → tool queries → evidence → MITRE ATT&CK → confidence → remediation.</p><button onclick="runDemo()">Run investigation</button></div>
-<div class="grid"><div class="card"><h3>Verdict</h3><div id="risk" class="risk">—</div><div id="verdict" class="muted">Run the demo.</div></div><div class="card"><h3>Top hypothesis</h3><div id="hyp">—</div></div></div>
-<div class="card" style="margin-top:16px"><h3>Investigation report</h3><pre id="out">Waiting...</pre></div>
-</div>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <div class="panel">
+      <div class="eyebrow">Evidence-grounded security research</div>
+      <h1>Agentic SOC Investigator</h1>
+      <p>Correlate identity, endpoint, network, cloud, and threat-intelligence evidence; test competing hypotheses; map ATT&amp;CK; and measure whether an AI investigator is actually grounded.</p>
+    </div>
+    <div class="panel">
+      <div class="label">Investigation case</div>
+      <select id="scenario"></select>
+      <button id="run">Run evidence-first investigation</button>
+      <p id="scenarioDescription"></p>
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="panel"><div class="label">Risk score</div><div class="metric" id="risk">—</div></div>
+    <div class="panel"><div class="label">Verdict</div><div class="metric" id="verdict">—</div></div>
+    <div class="panel"><div class="label">Cited events</div><div class="metric" id="citations">—</div></div>
+  </section>
+
+  <section class="two section">
+    <div class="panel"><h2>Leading hypothesis</h2><div id="hypothesis">Run a case.</div><div id="evidence"></div></div>
+    <div class="panel"><h2>ATT&amp;CK and evidence graph</h2><div id="techniques"></div><pre id="graph">Run a case.</pre></div>
+  </section>
+
+  <section class="panel section">
+    <h2>Offline comparison</h2>
+    <p>System ablations use the same scenarios and scoring contract. They are not presented as measurements of named commercial LLMs.</p>
+    <table><thead><tr><th>Model</th><th>Verdict accuracy</th><th>Benign specificity</th><th>Hypothesis accuracy</th><th>Technique recall</th><th>Evidence coverage</th></tr></thead><tbody id="evaluation"></tbody></table>
+  </section>
+
+  <section class="panel section"><h2>Full report</h2><pre id="report">Run a case.</pre></section>
+</main>
 <script>
-async function runDemo(){
- const alert=await (await fetch('/demo-alert')).json();
- const res=await fetch('/investigate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(alert)});
- const r=await res.json();
- document.getElementById('risk').textContent=r.risk_score+'/100';
- document.getElementById('verdict').textContent=r.verdict.replaceAll('_',' ');
- const sorted=[...r.hypotheses].sort((a,b)=>b.confidence-a.confidence);
- document.getElementById('hyp').textContent=sorted[0].name+' — '+Math.round(sorted[0].confidence*100)+'%';
- document.getElementById('out').textContent=JSON.stringify(r,null,2);
+const pct=x=>Math.round(x*100)+'%';
+async function load(){
+  const scenarios=await (await fetch('/api/scenarios')).json();
+  const select=document.getElementById('scenario');
+  scenarios.forEach(s=>{const o=document.createElement('option');o.value=s.scenario_id;o.textContent=s.title;select.appendChild(o)});
+  const describe=()=>document.getElementById('scenarioDescription').textContent=scenarios.find(s=>s.scenario_id===select.value).description;
+  select.onchange=describe;describe();
+  const evaluation=await (await fetch('/api/evaluation')).json();
+  document.getElementById('evaluation').innerHTML=evaluation.map(m=>`<tr><td>${m.model_name}</td><td>${pct(m.verdict_accuracy)}</td><td>${pct(m.benign_specificity)}</td><td>${pct(m.hypothesis_accuracy)}</td><td>${pct(m.technique_recall)}</td><td>${pct(m.evidence_coverage)}</td></tr>`).join('');
 }
-</script></body></html>
+async function run(){
+  const id=document.getElementById('scenario').value;
+  const r=await (await fetch('/api/investigate/'+encodeURIComponent(id),{method:'POST'})).json();
+  document.getElementById('risk').textContent=r.risk_score+'/100';
+  const verdict=document.getElementById('verdict');verdict.textContent=r.verdict.replaceAll('_',' ');verdict.className='metric '+(r.verdict==='benign'?'good':'bad');
+  document.getElementById('citations').textContent=r.citations.length;
+  const top=r.hypotheses.find(h=>h.name===r.primary_hypothesis);
+  document.getElementById('hypothesis').innerHTML=`<strong>${top.name}</strong><p>Confidence: ${pct(top.confidence)}</p>`;
+  document.getElementById('evidence').innerHTML=top.evidence.map(e=>`<div class="evidence"><strong>${e.finding}</strong><br><span class="label">${e.source} · weight ${e.weight} · ${e.event_ids.join(', ')||'threat-intel context'}</span></div>`).join('');
+  document.getElementById('techniques').innerHTML=r.mitre_attack.map(t=>`<span class="tag">${t.technique_id} · ${t.name}</span>`).join('')||'<span class="tag">No ATT&CK mapping</span>';
+  document.getElementById('graph').textContent=JSON.stringify(r.graph,null,2);
+  document.getElementById('report').textContent=JSON.stringify(r,null,2);
+}
+document.getElementById('run').onclick=run;load();
+</script>
+</body>
+</html>
+
