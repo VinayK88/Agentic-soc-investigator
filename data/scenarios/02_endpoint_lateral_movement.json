@@ -1,0 +1,84 @@
+{
+  "scenario_id": "endpoint-credential-lateral-movement",
+  "title": "Endpoint execution, credential access, and lateral movement",
+  "description": "PowerShell execution and credential access precede a remote service, network logon, and outbound command-and-control connection.",
+  "alert": {
+    "alert_id": "ALRT-ENDPOINT-002",
+    "title": "Suspicious PowerShell and remote authentication",
+    "severity": "critical",
+    "timestamp": "2026-08-09T14:12:00Z",
+    "description": "A workstation executed an encoded command before authenticating to a finance server.",
+    "user": "samir.patel@contoso.example",
+    "device": "ENG-WS-017",
+    "src_ip": "10.0.4.17",
+    "application": ""
+  },
+  "events": [
+    {
+      "event_id": "ep-001",
+      "timestamp": "2026-08-09T14:05:00Z",
+      "source": "endpoint",
+      "event_type": "encoded_powershell",
+      "user": "samir.patel@contoso.example",
+      "device": "ENG-WS-017",
+      "src_ip": "10.0.4.17",
+      "application": "PowerShell",
+      "details": {"command": "powershell.exe -enc <redacted-synthetic-payload>", "parent": "winword.exe"}
+    },
+    {
+      "event_id": "ep-002",
+      "timestamp": "2026-08-09T14:07:00Z",
+      "source": "endpoint",
+      "event_type": "credential_access",
+      "user": "samir.patel@contoso.example",
+      "device": "ENG-WS-017",
+      "src_ip": "10.0.4.17",
+      "application": "Endpoint sensor",
+      "details": {"signal": "LSASS access heuristic", "process": "rundll32.exe"}
+    },
+    {
+      "event_id": "ep-003",
+      "timestamp": "2026-08-09T14:10:00Z",
+      "source": "endpoint",
+      "event_type": "remote_service",
+      "user": "samir.patel@contoso.example",
+      "device": "ENG-WS-017",
+      "src_ip": "10.0.4.17",
+      "application": "Service Control Manager",
+      "details": {"target_device": "FIN-SRV-003", "share": "ADMIN$"}
+    },
+    {
+      "event_id": "ep-004",
+      "timestamp": "2026-08-09T14:11:00Z",
+      "source": "identity",
+      "event_type": "lateral_logon",
+      "user": "samir.patel@contoso.example",
+      "device": "FIN-SRV-003",
+      "src_ip": "10.0.4.17",
+      "application": "Windows",
+      "details": {"logon_type": "Network", "source_device": "ENG-WS-017"}
+    },
+    {
+      "event_id": "ep-005",
+      "timestamp": "2026-08-09T14:13:00Z",
+      "source": "network",
+      "event_type": "c2_connection",
+      "user": "samir.patel@contoso.example",
+      "device": "FIN-SRV-003",
+      "src_ip": "198.51.100.88",
+      "application": "HTTPS",
+      "details": {"destination": "198.51.100.88", "port": 443, "bytes_sent": 120483}
+    }
+  ],
+  "threat_intel": {
+    "10.0.4.17": {"reputation": "internal", "score": 0, "tags": ["enterprise-address"]},
+    "198.51.100.88": {"reputation": "malicious", "score": 89, "tags": ["command-and-control"]}
+  },
+  "ground_truth": {
+    "verdict": "confirmed_compromise",
+    "primary_hypothesis": "Endpoint compromise and lateral movement",
+    "mitre_techniques": ["T1059.001", "T1003.001", "T1021.002", "T1071.001"],
+    "evidence_event_ids": ["ep-001", "ep-002", "ep-003", "ep-004", "ep-005"]
+  }
+}
+

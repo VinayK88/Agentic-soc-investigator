@@ -1,0 +1,83 @@
+{
+  "scenario_id": "oauth-consent-mailbox-collection",
+  "title": "OAuth consent abuse and mailbox collection",
+  "description": "A newly consented application receives privileged permissions, signs in without a user, and accesses multiple mailboxes and files.",
+  "alert": {
+    "alert_id": "ALRT-OAUTH-003",
+    "title": "Unusual cloud application activity",
+    "severity": "high",
+    "timestamp": "2026-08-09T18:44:00Z",
+    "description": "A recently registered application accessed several users' cloud resources.",
+    "user": "admin.ops@contoso.example",
+    "device": "",
+    "src_ip": "203.0.113.120",
+    "application": "Archive Sync"
+  },
+  "events": [
+    {
+      "event_id": "oa-001",
+      "timestamp": "2026-08-09T18:30:00Z",
+      "source": "cloud",
+      "event_type": "oauth_consent",
+      "user": "admin.ops@contoso.example",
+      "device": "",
+      "src_ip": "203.0.113.120",
+      "application": "Archive Sync",
+      "details": {"app_id": "synthetic-app-447", "publisher_verified": false}
+    },
+    {
+      "event_id": "oa-002",
+      "timestamp": "2026-08-09T18:31:00Z",
+      "source": "cloud",
+      "event_type": "high_privilege_grant",
+      "user": "admin.ops@contoso.example",
+      "device": "",
+      "src_ip": "203.0.113.120",
+      "application": "Archive Sync",
+      "details": {"permissions": ["Mail.Read", "Files.Read.All"], "consent_type": "AllPrincipals"}
+    },
+    {
+      "event_id": "oa-003",
+      "timestamp": "2026-08-09T18:34:00Z",
+      "source": "entra",
+      "event_type": "app_only_signin",
+      "user": "admin.ops@contoso.example",
+      "device": "",
+      "src_ip": "203.0.113.120",
+      "application": "Archive Sync",
+      "details": {"service_principal": "synthetic-app-447", "first_seen": true}
+    },
+    {
+      "event_id": "oa-004",
+      "timestamp": "2026-08-09T18:38:00Z",
+      "source": "cloud",
+      "event_type": "mailbox_access",
+      "user": "admin.ops@contoso.example",
+      "device": "",
+      "src_ip": "203.0.113.120",
+      "application": "Archive Sync",
+      "details": {"mailboxes": 18, "messages_accessed": 443}
+    },
+    {
+      "event_id": "oa-005",
+      "timestamp": "2026-08-09T18:42:00Z",
+      "source": "cloud",
+      "event_type": "mass_download",
+      "user": "admin.ops@contoso.example",
+      "device": "",
+      "src_ip": "203.0.113.120",
+      "application": "Archive Sync",
+      "details": {"object_count": 735, "sites": 6}
+    }
+  ],
+  "threat_intel": {
+    "203.0.113.120": {"reputation": "malicious", "score": 86, "tags": ["oauth-abuse", "cloud-collection"]}
+  },
+  "ground_truth": {
+    "verdict": "confirmed_compromise",
+    "primary_hypothesis": "OAuth application abuse",
+    "mitre_techniques": ["T1098.003", "T1078.004", "T1114.002", "T1530"],
+    "evidence_event_ids": ["oa-001", "oa-002", "oa-003", "oa-004", "oa-005"]
+  }
+}
+

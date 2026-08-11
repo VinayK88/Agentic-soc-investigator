@@ -1,0 +1,72 @@
+{
+  "scenario_id": "identity-takeover-cloud-exfil",
+  "title": "Identity takeover followed by cloud collection",
+  "description": "A risky sign-in, authentication-method change, and high-volume SharePoint access form one evidence-backed sequence.",
+  "alert": {
+    "alert_id": "ALRT-IDENTITY-001",
+    "title": "High-risk sign-in followed by unusual data access",
+    "severity": "critical",
+    "timestamp": "2026-08-09T10:34:00Z",
+    "description": "An unfamiliar sign-in was followed by a large number of cloud-file operations.",
+    "user": "maya.chen@contoso.example",
+    "device": "FIN-LT-044",
+    "src_ip": "203.0.113.66",
+    "application": "SharePoint Online"
+  },
+  "events": [
+    {
+      "event_id": "id-001",
+      "timestamp": "2026-08-09T10:28:00Z",
+      "source": "entra",
+      "event_type": "risky_signin",
+      "user": "maya.chen@contoso.example",
+      "device": "FIN-LT-044",
+      "src_ip": "203.0.113.66",
+      "application": "Microsoft 365",
+      "details": {"risk_level": 100, "country": "RO", "managed_device": false}
+    },
+    {
+      "event_id": "id-002",
+      "timestamp": "2026-08-09T10:29:00Z",
+      "source": "entra",
+      "event_type": "impossible_travel",
+      "user": "maya.chen@contoso.example",
+      "device": "FIN-LT-044",
+      "src_ip": "203.0.113.66",
+      "application": "Microsoft 365",
+      "details": {"from": "Austin", "to": "Bucharest", "minutes": 19}
+    },
+    {
+      "event_id": "id-003",
+      "timestamp": "2026-08-09T10:31:00Z",
+      "source": "entra",
+      "event_type": "mfa_reset",
+      "user": "maya.chen@contoso.example",
+      "device": "FIN-LT-044",
+      "src_ip": "203.0.113.66",
+      "application": "Microsoft Entra ID",
+      "details": {"new_method": "Authenticator app"}
+    },
+    {
+      "event_id": "id-004",
+      "timestamp": "2026-08-09T10:39:00Z",
+      "source": "cloud",
+      "event_type": "mass_download",
+      "user": "maya.chen@contoso.example",
+      "device": "FIN-LT-044",
+      "src_ip": "203.0.113.66",
+      "application": "SharePoint Online",
+      "details": {"object_count": 1482, "site": "M&A"}
+    }
+  ],
+  "threat_intel": {
+    "203.0.113.66": {"reputation": "malicious", "score": 92, "tags": ["credential-theft", "cloud-abuse"]}
+  },
+  "ground_truth": {
+    "verdict": "confirmed_compromise",
+    "primary_hypothesis": "Account takeover and cloud data theft",
+    "mitre_techniques": ["T1078", "T1098", "T1530"],
+    "evidence_event_ids": ["id-001", "id-002", "id-003", "id-004"]
+  }
+}
+
