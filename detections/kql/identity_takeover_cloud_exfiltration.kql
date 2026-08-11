@@ -1,0 +1,64 @@
+// Microsoft Defender XDR advanced hunting
+// Correlate successful medium/high-risk Entra sign-ins with bursty cloud access.
+// Review thresholds and ActionType values against your tenant's in-portal schema.
+let lookback = 1d;
+let cloud_window = 2h;
+let minimum_cloud_actions = 100;
+let RiskySignIns =
+    EntraIdSignInEvents
+    | where Timestamp > ago(lookback)
+    | where ErrorCode == 0
+    | where RiskLevelAggregated >= 50 or RiskState in (4, 5)
+    | project
+        SignInTime = Timestamp,
+        AccountObjectId,
+        AccountUpn,
+        SignInIP = IPAddress,
+        SignInCountry = Country,
+        Application,
+        RiskLevelAggregated,
+        RiskState,
+        RiskEventTypes,
+        CorrelationId,
+        DeviceName,
+        IsManaged,
+        IsCompliant;
+let CloudCollection =
+    CloudAppEvents
+    | where Timestamp > ago(lookback)
+    | where ActionType has_any ("Download", "Access", "Sync")
+        or ActivityType has_any ("Download", "Access", "Sync")
+    | summarize
+        CloudActionCount = count(),
+        FirstCloudAction = min(Timestamp),
+        LastCloudAction = max(Timestamp),
+        CloudIPs = make_set(IPAddress, 20),
+        Applications = make_set(Application, 20),
+        SampleObjects = make_set(ObjectName, 20)
+        by AccountObjectId
+    | where CloudActionCount >= minimum_cloud_actions;
+RiskySignIns
+| join kind=inner CloudCollection on AccountObjectId
+| where FirstCloudAction between (SignInTime .. SignInTime + cloud_window)
+| extend SameSourceIP = array_index_of(CloudIPs, SignInIP) >= 0
+| project
+    SignInTime,
+    FirstCloudAction,
+    LastCloudAction,
+    AccountUpn,
+    SignInIP,
+    SignInCountry,
+    RiskLevelAggregated,
+    RiskState,
+    RiskEventTypes,
+    CloudActionCount,
+    CloudIPs,
+    SameSourceIP,
+    Applications,
+    SampleObjects,
+    CorrelationId,
+    DeviceName,
+    IsManaged,
+    IsCompliant
+| order by CloudActionCount desc
+

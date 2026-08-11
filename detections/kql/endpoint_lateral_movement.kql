@@ -1,0 +1,56 @@
+// Microsoft Defender XDR advanced hunting
+// Find suspicious PowerShell followed by a network/RDP logon from the same source device.
+let lookback = 1d;
+let correlation_window = 30m;
+let SuspiciousPowerShell =
+    DeviceProcessEvents
+    | where Timestamp > ago(lookback)
+    | where FileName =~ "powershell.exe"
+    | where ProcessCommandLine has_any (" -enc ", " -encodedcommand ", "downloadstring", "frombase64string")
+    | project
+        ProcessTime = Timestamp,
+        SourceDeviceId = DeviceId,
+        SourceDevice = DeviceName,
+        AccountUpn,
+        ProcessCommandLine,
+        InitiatingProcessFileName,
+        InitiatingProcessCommandLine,
+        SHA1,
+        ProcessUniqueId;
+let RemoteLogons =
+    DeviceLogonEvents
+    | where Timestamp > ago(lookback)
+    | where ActionType == "LogonSuccess"
+    | where LogonType in~ ("Network", "Remote interactive (RDP)")
+    | project
+        LogonTime = Timestamp,
+        DestinationDeviceId = DeviceId,
+        DestinationDevice = DeviceName,
+        AccountName,
+        AccountDomain,
+        LogonType,
+        RemoteDeviceName,
+        RemoteIP,
+        IsLocalAdmin,
+        LogonId;
+SuspiciousPowerShell
+| join kind=inner RemoteLogons on $left.SourceDevice == $right.RemoteDeviceName
+| where LogonTime between (ProcessTime .. ProcessTime + correlation_window)
+| project
+    ProcessTime,
+    LogonTime,
+    SourceDevice,
+    DestinationDevice,
+    AccountUpn,
+    AccountDomain,
+    AccountName,
+    LogonType,
+    RemoteIP,
+    IsLocalAdmin,
+    ProcessCommandLine,
+    InitiatingProcessFileName,
+    SHA1,
+    ProcessUniqueId,
+    LogonId
+| order by ProcessTime desc
+
