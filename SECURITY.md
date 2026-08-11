@@ -1,7 +1,9 @@
-# Security Policy
+# Security policy
 
-This repository is a defensive, simulation-only educational project. It does not include exploit delivery, credential theft, persistence mechanisms, or instructions for compromising real systems.
+This repository is a defensive research project. The default dataset is synthetic and the default tools are read-only.
 
-Please do not submit real credentials, customer telemetry, access tokens, or sensitive production data to the demo API.
+- Do not submit customer telemetry, credentials, tokens, or production identifiers.
+- The Defender connector accepts an access token at runtime and never persists it. Use the least-privileged `ThreatHunting.Read.All` permission.
+- Human approval is required before containment or remediation. The project does not execute response actions.
+- Report repository vulnerabilities through a private GitHub security advisory when available.
 
-For vulnerabilities in this repository, open a private GitHub security advisory when available.
