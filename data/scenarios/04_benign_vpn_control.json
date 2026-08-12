@@ -1,0 +1,72 @@
+{
+  "scenario_id": "benign-travel-vpn-control",
+  "title": "Benign travel through approved corporate VPN",
+  "description": "A deliberately difficult negative control: an impossible-travel alert is explained by an approved trip, known VPN egress, compliant device, and normal cloud activity.",
+  "alert": {
+    "alert_id": "ALRT-CONTROL-004",
+    "title": "Impossible travel alert from managed device",
+    "severity": "medium",
+    "timestamp": "2026-08-09T20:11:00Z",
+    "description": "Two sign-in locations were observed inside a short time window.",
+    "user": "alex.ross@contoso.example",
+    "device": "MKT-LT-021",
+    "src_ip": "198.51.100.22",
+    "application": "Microsoft 365"
+  },
+  "events": [
+    {
+      "event_id": "bn-001",
+      "timestamp": "2026-08-09T20:03:00Z",
+      "source": "entra",
+      "event_type": "known_vpn",
+      "user": "alex.ross@contoso.example",
+      "device": "MKT-LT-021",
+      "src_ip": "198.51.100.22",
+      "application": "Microsoft 365",
+      "details": {"named_location": "Corporate VPN", "egress_region": "US-East"}
+    },
+    {
+      "event_id": "bn-002",
+      "timestamp": "2026-08-09T20:04:00Z",
+      "source": "identity",
+      "event_type": "approved_travel",
+      "user": "alex.ross@contoso.example",
+      "device": "MKT-LT-021",
+      "src_ip": "198.51.100.22",
+      "application": "Travel system",
+      "details": {"destination": "New York", "approval_id": "TRAVEL-SYNTH-44"}
+    },
+    {
+      "event_id": "bn-003",
+      "timestamp": "2026-08-09T20:05:00Z",
+      "source": "endpoint",
+      "event_type": "compliant_device",
+      "user": "alex.ross@contoso.example",
+      "device": "MKT-LT-021",
+      "src_ip": "198.51.100.22",
+      "application": "Device compliance",
+      "details": {"compliant": true, "sensor_health": "healthy"}
+    },
+    {
+      "event_id": "bn-004",
+      "timestamp": "2026-08-09T20:09:00Z",
+      "source": "cloud",
+      "event_type": "normal_download",
+      "user": "alex.ross@contoso.example",
+      "device": "MKT-LT-021",
+      "src_ip": "198.51.100.22",
+      "application": "Microsoft 365",
+      "details": {"object_count": 12, "baseline_p95": 34}
+    }
+  ],
+  "threat_intel": {
+    "198.51.100.22": {"reputation": "benign", "score": 2, "tags": ["corporate-vpn", "named-location"]}
+  },
+  "ground_truth": {
+    "verdict": "benign",
+    "primary_hypothesis": "Benign travel or corporate VPN",
+    "mitre_techniques": [],
+    "evidence_event_ids": ["bn-001", "bn-002", "bn-003", "bn-004"]
+  }
+}
+

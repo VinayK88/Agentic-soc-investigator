@@ -1,0 +1,59 @@
+// Microsoft Defender XDR advanced hunting
+// Identify newly consented OAuth apps that immediately perform broad cloud collection.
+let lookback = 7d;
+let collection_window = 2h;
+let minimum_actions = 50;
+let SuspiciousOAuthGrants =
+    CloudAppEvents
+    | where Timestamp > ago(lookback)
+    | where isnotempty(OAuthAppId)
+    | where ActionType contains "Consent"
+        or ActivityType contains "Consent"
+        or tostring(RawEventData) has_any ("Mail.Read", "Files.Read.All", "full_access_as_app")
+    | project
+        GrantTime = Timestamp,
+        OAuthAppId,
+        Application,
+        GrantingAccountObjectId = AccountObjectId,
+        GrantingAccount = AccountId,
+        GrantSourceIP = IPAddress,
+        IsAdminOperation,
+        ActionType,
+        ActivityType,
+        RawEventData;
+let FollowOnActivity =
+    CloudAppEvents
+    | where Timestamp > ago(lookback)
+    | where isnotempty(OAuthAppId)
+    | where ActionType has_any ("Download", "Access", "Read", "Sync")
+        or ActivityType has_any ("Download", "Access", "Read", "Sync")
+    | summarize
+        ActivityCount = count(),
+        FirstActivity = min(Timestamp),
+        LastActivity = max(Timestamp),
+        TargetAccounts = dcount(AccountObjectId),
+        SourceIPs = make_set(IPAddress, 20),
+        SampleObjects = make_set(ObjectName, 20)
+        by OAuthAppId, Application;
+SuspiciousOAuthGrants
+| join kind=inner FollowOnActivity on OAuthAppId
+| where FirstActivity between (GrantTime .. GrantTime + collection_window)
+| where ActivityCount >= minimum_actions or TargetAccounts >= 5
+| project
+    GrantTime,
+    FirstActivity,
+    LastActivity,
+    OAuthAppId,
+    Application,
+    GrantingAccount,
+    GrantingAccountObjectId,
+    GrantSourceIP,
+    IsAdminOperation,
+    ActionType,
+    ActivityType,
+    ActivityCount,
+    TargetAccounts,
+    SourceIPs,
+    SampleObjects
+| order by ActivityCount desc
+

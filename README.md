@@ -2,105 +2,120 @@
 
 # Agentic SOC Investigator
 
-### Turn one security alert into hypotheses, evidence, ATT&CK context, and analyst-ready next actions
+### Evidence-grounded investigation across identity, endpoint, cloud, OAuth, and threat intelligence
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.116-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![CI](https://github.com/VinayK88/Agentic-soc-investigator/actions/workflows/tests.yml/badge.svg)](https://github.com/VinayK88/Agentic-soc-investigator/actions/workflows/tests.yml)
 [![Docker](https://img.shields.io/badge/Docker-Compose%20ready-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
-[![Tests](https://img.shields.io/badge/Tests-pytest-0A9EDC?logo=pytest&logoColor=white)](#run-the-tests)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Mode](https://img.shields.io/badge/Mode-defensive%20simulation-7B61FF)](#safety)
+[![Mode](https://img.shields.io/badge/Mode-defensive%20research-7B61FF)](#safety-and-responsible-use)
 
-**Hypothesize · collect · correlate · score · explain · recommend**
+**Hypothesize · collect · correlate · score · explain · evaluate**
 
-[Quick start](#quick-start) · [Demo investigation](#demo-investigation) · [Architecture](#architecture) · [Scoring](#how-the-scoring-works)
+[Quick start](#quick-start) · [Architecture](#architecture) · [Research snapshot](#research-snapshot) · [Cases](#reproducible-cases) · [Safety](#safety-and-responsible-use)
 
 </div>
 
 ---
 
-A deterministic, evidence-driven SOC investigation engine. It correlates a synthetic alert across read-only SIEM, identity, EDR, and threat-intelligence tools; tests competing hypotheses; maps the evidence to MITRE ATT&CK; and produces a transparent report for human review.
+An evidence-first applied AI security research platform for investigating identity, endpoint, cloud, and OAuth attacks. It turns normalized telemetry into auditable findings: every verdict links to supporting events, competing hypotheses, an entity-event graph, MITRE ATT&CK techniques, and human-approved response recommendations.
 
-The default demo runs entirely offline. It needs **no API key, external LLM, SIEM, or production telemetry**.
+The repository combines a runnable investigation engine, repeatable experiments, defensive KQL, a read-only Microsoft Defender connector, FastAPI endpoints, and a compact analyst workbench.
+
+> **Research boundary:** all checked-in telemetry is synthetic. Offline results are regression-test evidence—not a production effectiveness claim. The platform recommends actions but never executes containment autonomously.
 
 ## Why this project?
 
 Traditional alert pipelines often stop at “high severity.” An investigation needs to answer more useful questions:
 
-| Analyst question | What the engine returns |
+| Analyst question | What the platform returns |
 | --- | --- |
 | What could explain this alert? | Competing compromise and benign hypotheses |
-| What evidence was collected? | Read-only tool results with source labels |
-| What supports or contradicts each theory? | Per-hypothesis evidence and confidence |
-| Which behaviors are represented? | ATT&CK techniques with rationale |
-| What should happen next? | Safe remediation recommendations requiring human approval |
+| What evidence was collected? | Read-only results with source labels and event IDs |
+| What supports or contradicts each theory? | Per-hypothesis evidence, weights, and confidence |
+| Which behaviors are represented? | ATT&CK techniques with evidence-grounded rationale |
+| Which entities connect the activity? | Entity-event-technique graph summaries |
+| What should happen next? | Safe recommendations that require human approval |
+| Is the investigator actually grounded? | Shared metrics for verdicts, hypotheses, ATT&CK, citations, and evidence coverage |
+
+## What is included
+
+- Four versioned cases: three multi-stage attacks and one ambiguous benign VPN/travel control.
+- Evidence-grounded investigations with transparent risk scoring, citations, hypothesis ranking, and ATT&CK mapping.
+- An entity-event-technique graph that exposes relationships hidden across individual alerts.
+- Behavioral analytics and bounded anomaly features.
+- A shared evaluation contract for verdict accuracy, attack recall, benign specificity, hypothesis accuracy, ATT&CK quality, citation precision, and evidence coverage.
+- Evidence-first, alert-only, and permissive-keyword ablations, plus replay support for real-model JSONL outputs.
+- Defensive Advanced Hunting queries for identity takeover, endpoint lateral movement, and OAuth consent abuse.
+- A least-privileged, read-only Microsoft Graph connector for Defender Advanced Hunting.
+- FastAPI endpoints and a browser-based analyst workbench.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    ALERT["Security alert"] --> PLAN["Generate competing hypotheses"]
+    SOURCE["Synthetic cases or authorized Defender results"] --> NORMALIZE["Normalized security events"]
 
-    PLAN --> SIEM["Read-only SIEM query"]
-    PLAN --> ID["Read-only identity query"]
-    PLAN --> EDR["Read-only EDR query"]
-    PLAN --> TI["Threat-intelligence lookup"]
+    NORMALIZE --> FEATURES["Behavioral features"]
+    NORMALIZE --> GRAPH["Entity-event graph"]
+    NORMALIZE --> EVIDENCE["Evidence + provenance"]
 
-    SIEM & ID & EDR & TI --> EVIDENCE["Evidence + provenance"]
-    EVIDENCE --> SCORE["Score each hypothesis"]
-    EVIDENCE --> ATTACK["Map MITRE ATT&CK"]
-    SCORE & ATTACK --> REPORT["Analyst-ready report"]
+    FEATURES & GRAPH & EVIDENCE --> HYPOTHESES["Competing hypotheses"]
+    HYPOTHESES --> SCORE["Transparent confidence + risk"]
+    EVIDENCE --> ATTACK["MITRE ATT&CK mapping"]
+
+    SCORE & ATTACK --> REPORT["Evidence-cited investigation report"]
+    REPORT --> EVALUATE["Model-agnostic evaluation"]
     REPORT --> HUMAN{"Human decision"}
-    HUMAN -->|approve| ACTION["Containment workflow"]
-    HUMAN -->|reject / refine| REVIEW["Further investigation"]
+    HUMAN -->|approve| RESPONSE["Separate response workflow"]
+    HUMAN -->|refine| REVIEW["Further investigation"]
 ```
 
-### Investigation lifecycle
+### Trust boundaries
 
 ```mermaid
-sequenceDiagram
-    participant A as Alert queue
-    participant I as Investigator
-    participant T as Security toolbox
-    participant S as Scorer
-    participant H as Human analyst
-
-    A->>I: Suspicious identity + endpoint alert
-    I->>T: Query SIEM, identity, EDR, and IP reputation
-    T-->>I: Synthetic evidence records
-    I->>S: Account takeover vs endpoint compromise vs benign travel
-    S-->>I: Confidence, verdict, risk, and ATT&CK map
-    I-->>H: Evidence-backed investigation report
-    H->>H: Validate and approve any consequential action
+flowchart TB
+    INPUT["Telemetry and model output\nUntrusted"] --> VALIDATE["Schema + event-ID validation"]
+    VALIDATE --> DETERM["Deterministic evidence, graph, scoring, ATT&CK"]
+    DETERM --> OUTPUT["Auditable report"]
+    OUTPUT --> APPROVAL{"Analyst approval required"}
+    APPROVAL -->|outside this app| ACTION["Scoped consequential action"]
 ```
 
-## Core capabilities
-
-- Typed alert, evidence, hypothesis, ATT&CK, and report contracts
-- Read-only synthetic security-tool interfaces
-- Three explicit competing hypotheses
-- Supporting and contradicting evidence weights
-- Deterministic confidence and risk scoring
-- ATT&CK mapping for identity, execution, remote access, and cloud collection
-- Human-controlled remediation recommendations
-- Investigation timeline and analyst summary
-- FastAPI, browser demo, Docker Compose, and pytest coverage
+An LLM may propose a hypothesis or summarize a case, but event retrieval, citation validation, scoring, ATT&CK mapping, and action authorization remain explicit and testable. See [the architecture and threat model](docs/architecture.md).
 
 ## Quick start
 
-### Local Python
+The core investigation and evaluation paths use only the Python standard library.
 
 ```bash
 git clone https://github.com/VinayK88/Agentic-soc-investigator.git
 cd Agentic-soc-investigator
 
+python scripts/run_scenarios.py
+python scripts/compare_models.py
+python -m unittest discover -s tests -v
+```
+
+### Run one investigation
+
+```bash
+python scripts/run_scenarios.py \
+  --scenario identity-takeover-cloud-exfil \
+  --json
+```
+
+### Run the analyst workbench
+
+```bash
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-### Docker Compose
+Or use Docker Compose:
 
 ```bash
 docker compose up --build
@@ -108,211 +123,152 @@ docker compose up --build
 
 | Destination | URL |
 | --- | --- |
-| Browser investigation demo | <http://localhost:8000> |
-| Interactive OpenAPI docs | <http://localhost:8000/docs> |
-| Health check | <http://localhost:8000/health> |
-| Built-in alert fixture | <http://localhost:8000/demo-alert> |
+| Analyst workbench | <http://127.0.0.1:8000> |
+| Interactive OpenAPI docs | <http://127.0.0.1:8000/docs> |
+| Health check | <http://127.0.0.1:8000/health> |
+| Scenario catalog | <http://127.0.0.1:8000/api/scenarios> |
+| Offline model comparison | <http://127.0.0.1:8000/api/evaluation> |
 
-## Demo investigation
-
-### 1. Fetch the built-in alert
-
-```bash
-curl -sS http://localhost:8000/demo-alert | python -m json.tool
-```
-
-```json
-{
-  "alert_id": "ALRT-2026-001",
-  "title": "Suspicious Entra sign-in followed by cloud download",
-  "severity": "high",
-  "user": "maya.chen@contoso.example",
-  "device": "FIN-LT-044",
-  "src_ip": "203.0.113.66",
-  "timestamp": "2026-08-09T10:34:00Z",
-  "description": "Impossible travel and unusual data access were observed for a finance identity."
-}
-```
-
-### 2. Investigate it
+### Call the API
 
 ```bash
-curl -sS -X POST http://localhost:8000/investigate \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "alert_id": "ALRT-2026-001",
-    "title": "Suspicious Entra sign-in followed by cloud download",
-    "severity": "high",
-    "user": "maya.chen@contoso.example",
-    "device": "FIN-LT-044",
-    "src_ip": "203.0.113.66",
-    "timestamp": "2026-08-09T10:34:00Z",
-    "description": "Impossible travel and unusual data access were observed."
-  }' | python -m json.tool
+curl -sS http://127.0.0.1:8000/api/scenarios | python -m json.tool
+
+curl -sS -X POST \
+  http://127.0.0.1:8000/api/investigate/identity-takeover-cloud-exfil \
+  | python -m json.tool
 ```
 
-### 3. Inspect the deterministic result
+## Research snapshot
 
-The included dataset correlates six security signals:
+The checked-in offline comparison runs all systems against the same four fixtures and scoring contract:
+
+| System | Verdict accuracy | Attack recall | Benign specificity | Hypothesis accuracy | Technique precision | Technique recall | Citation precision | Evidence coverage |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Evidence-first v0.2 | 100% | 100% | 100% | 100% | 100% | 100% | 100% | 100% |
+| Alert-only ablation | 75% | 100% | 0% | 50% | 60% | 27% | 0% | 0% |
+| Permissive keyword baseline | 75% | 100% | 0% | 25% | 38% | 27% | 0% | 0% |
+
+Attack recall alone makes both text-only baselines look acceptable. Benign specificity, hypothesis quality, ATT&CK quality, and evidence coverage expose the operational weakness of escalating everything without supporting telemetry.
+
+Read the [offline research report](docs/research-report.md) before interpreting these numbers. The sample size is four, the cases are synthetic, the rules and labels were developed together, and the thresholds are uncalibrated.
+
+## Reproducible cases
+
+| Case | Key evidence | Expected result |
+| --- | --- | --- |
+| Identity takeover and cloud collection | Unfamiliar sign-in, MFA change, high-volume download | Confirmed compromise; T1078, T1098, T1530 |
+| Endpoint lateral movement | Encoded PowerShell, credential access, remote service logon | Confirmed compromise; T1059.001, T1003.001, T1021.002, T1071.001 |
+| OAuth application abuse | Risky consent, mailbox access, cloud-file collection | Confirmed compromise; T1098.003, T1078.004, T1114.002, T1530 |
+| Authorized VPN and travel | Known egress, approved travel, compliant device, normal usage | Benign; no ATT&CK mapping |
 
 ```mermaid
 flowchart LR
-    IP["Malicious source IP"] --> ATO["Account takeover"]
-    TRAVEL["Impossible travel"] --> ATO
-    MFA["Recent MFA reset"] --> ATO
-    DOWNLOAD["1,482-object download"] --> ATO
-    PS["Encoded PowerShell"] --> ENDPOINT["Endpoint compromise"]
-    CRED["Credential-access heuristic"] --> ENDPOINT
-    IP -. contradicts .-> BENIGN["Benign travel / VPN"]
-```
-
-Abridged output:
-
-```json
-{
-  "verdict": "confirmed_compromise",
-  "risk_score": 93,
-  "summary": "Confirmed Compromise with modeled risk 93/100. Highest-confidence hypothesis: Account takeover (99%).",
-  "hypotheses": [
-    {
-      "name": "Account takeover",
-      "prior": 0.4,
-      "confidence": 0.99,
-      "status": "supported"
-    },
-    {
-      "name": "Endpoint compromise",
-      "prior": 0.25,
-      "confidence": 0.9453,
-      "status": "supported"
-    },
-    {
-      "name": "Benign travel / VPN",
-      "prior": 0.3,
-      "confidence": 0.1256,
-      "status": "rejected"
-    }
-  ],
-  "mitre_attack": [
-    {"technique_id": "T1078", "name": "Valid Accounts"},
-    {"technique_id": "T1133", "name": "External Remote Services"},
-    {"technique_id": "T1059.001", "name": "PowerShell"},
-    {"technique_id": "T1530", "name": "Data from Cloud Storage"}
-  ]
-}
+    ID["Identity signals"] --> ATO["Account takeover hypothesis"]
+    CLOUD["Cloud collection"] --> ATO
+    PROC["Endpoint execution"] --> ENDPOINT["Endpoint compromise hypothesis"]
+    LOGON["Lateral logon"] --> ENDPOINT
+    CONSENT["OAuth grant"] --> OAUTH["OAuth abuse hypothesis"]
+    MAIL["Mailbox access"] --> OAUTH
+    VPN["Known VPN + approved travel"] --> BENIGN["Benign hypothesis"]
 ```
 
 ## How the scoring works
 
-The project uses an explainable deterministic heuristic—not a claim of calibrated probability.
+The platform uses an explainable deterministic heuristic—not a claim of calibrated probability.
 
 For each hypothesis:
 
 ```text
 strength   = sum(evidence weights)
-confidence = sigmoid((prior - 0.5) × 2.2 + 2 × strength)
+confidence = sigmoid((prior - 0.5) × 2.2 + 1.85 × strength)
 confidence = clamp(confidence, 0.01, 0.99)
 ```
 
-The report-level risk balances the strongest compromise theory against the benign explanation:
+The report-level risk balances the strongest attack hypothesis against the benign explanation:
 
 ```text
-risk = 100 × strongest_compromise_confidence × (1 - 0.45 × benign_confidence)
+risk = 100 × strongest_attack_confidence × (1 - 0.62 × benign_confidence)
 ```
 
 | Risk score | Verdict |
 | ---: | --- |
-| `75–100` | `confirmed_compromise` |
-| `40–74` | `suspicious` |
-| `0–39` | `benign` |
+| `70–100` | `confirmed_compromise` |
+| `35–69` | `suspicious` |
+| `0–34` | `benign` |
 
-Production deployments should calibrate weights and thresholds against labeled investigations, source reliability, base rates, and analyst feedback.
+Production use requires calibration against labeled investigations, source reliability, base rates, time-separated validation, and analyst feedback.
 
-## Read-only tool boundary
+## Compare actual AI models
 
-`SecurityToolbox` exposes four small interfaces:
+Export an identical, versioned prompt bundle for external model runners:
 
-```python
-query_siem(user, src_ip)
-query_identity(user)
-query_edr(device)
-lookup_ip(ip)
+```bash
+python scripts/export_model_prompts.py --output /tmp/soc-prompts.jsonl
 ```
 
-The bundled implementation reads `data/synthetic_security_data.json`. Real adapters should preserve the same narrow, typed, read-only boundary and apply least privilege, audit logging, tenant isolation, and explicit authorization.
+Replay one or more model outputs through the same scoring contract:
 
-## Recommended actions are not executed
+```bash
+python scripts/compare_models.py \
+  --prediction model-a=/path/to/model-a.jsonl \
+  --prediction model-b=/path/to/model-b.jsonl
+```
 
-For suspicious or confirmed investigations, the engine recommends actions such as:
+Prediction files use one JSON object per scenario:
 
-- Revoke active sessions and refresh tokens.
-- Require phishing-resistant MFA.
-- Review OAuth grants, mailbox rules, and cloud-file access.
-- Isolate the device only when endpoint evidence corroborates execution.
-- Preserve telemetry and obtain human approval before remediation.
+```json
+{"scenario_id":"identity-takeover-cloud-exfil","verdict":"confirmed_compromise","primary_hypothesis":"Account takeover and cloud data theft","technique_ids":["T1078","T1098","T1530"],"evidence_event_ids":["evt-id-001","evt-id-002"]}
+```
 
-The engine does not perform those actions.
+The repository deliberately makes no claims for models that have not been run. See the [experiment design](docs/experiment-design.md) for repeated stochastic trials and cost, latency, unsupported-citation, refusal, and tool-selection reporting.
+
+## Microsoft Defender integration
+
+The optional connector calls Microsoft Graph's `security/runHuntingQuery` endpoint and requires a runtime token with the least-privileged `ThreatHunting.Read.All` scope. Tokens are neither logged nor persisted.
+
+```python
+from app.connectors.defender_graph import DefenderGraphConnector
+
+connector = DefenderGraphConnector.from_environment()
+result = connector.run_hunting_query(
+    "DeviceProcessEvents | take 10",
+    timespan="P7D",
+)
+```
+
+Set `DEFENDER_GRAPH_ACCESS_TOKEN` only in the runtime environment. Use a test tenant, follow your organization's authorization process, and revalidate KQL schemas before operational use. See the [Defender hunting assumptions](detections/README.md).
 
 ## Repository map
 
 ```text
-.
-├── app/
-│   ├── main.py          # FastAPI routes
-│   ├── models.py        # Alert, evidence, hypothesis, and report schemas
-│   ├── engine.py        # Investigation, scoring, ATT&CK, and actions
-│   ├── tools.py         # Read-only synthetic security toolbox
-│   └── static/index.html
-├── data/synthetic_security_data.json
-├── tests/test_engine.py
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-├── SECURITY.md
-└── CONTRIBUTING.md
+app/                  investigation, analytics, graph, API, connector, UI
+data/scenarios/       versioned synthetic telemetry and ground truth
+detections/kql/       defensive Microsoft Defender hunting queries
+docs/                 architecture, experiment design, provenance, report
+reports/              reproducible offline metrics snapshot
+scripts/              scenario runner, prompt exporter, model comparison
+tests/                engine, fixture, KQL, connector, evaluation tests
 ```
 
-## Run the tests
+## Safety and responsible use
 
-```bash
-pytest -q
-```
+- Keep collection and hunting read-only unless a human authorizes a separate response workflow.
+- Treat telemetry and model output as untrusted input; event text cannot override system or analyst instructions.
+- Never commit tenant data, access tokens, secrets, or personal information.
+- Require analyst approval for containment, account disablement, token revocation, device isolation, or other consequential action.
+- Revalidate query schemas, authorization, retention, and source provenance in the target environment.
+- Do not use this project for exploitation, persistence, credential collection, destructive actions, or unauthorized interaction.
 
-The current tests verify high-risk compromise detection, ATT&CK mapping, account-takeover confidence, and required human-approval language.
+See [SECURITY.md](SECURITY.md) for reporting and operational safeguards, and [data provenance](docs/data-provenance.md) for fixture boundaries.
 
-## Production evolution
+## Documentation
 
-```mermaid
-flowchart TB
-    QUEUE["Alert queue"] --> ORCH["Investigation orchestrator"]
-    ORCH --> CONNECT["Least-privilege SIEM / EDR / identity / CTI connectors"]
-    CONNECT --> STORE[("Evidence + provenance store")]
-    STORE --> REASON["Deterministic rules + optional LLM planner"]
-    REASON --> EVAL["Hallucination and unsupported-conclusion evaluation"]
-    EVAL --> CASE["Analyst case workspace"]
-    CASE --> APPROVE{"Human approval"}
-    APPROVE -->|approved| SOAR["Scoped SOAR action"]
-    APPROVE -->|not approved| MEMORY["Investigation memory"]
-```
+- [Architecture and threat model](docs/architecture.md)
+- [Experiment design](docs/experiment-design.md)
+- [Model comparison guide](docs/model-comparison.md)
+- [Data provenance](docs/data-provenance.md)
+- [Offline research report](docs/research-report.md)
+- [KQL schema notes](detections/README.md)
 
-Roadmap areas:
-
-- Temporal evidence graphs and investigation memory
-- Pluggable tool registry with structured allowlists
-- Safe Sentinel, Defender, and Entra-style adapters
-- ATT&CK tactic/technique chain visualization
-- Typed LLM planning with evidence-grounding evaluations
-- Analyst feedback and confidence calibration
-- End-to-end provenance, observability, and approval auditing
-
-## Safety
-
-This project contains synthetic telemetry and defensive investigation logic only. It does not perform exploitation, persistence, credential collection, or unauthorized interaction. Never submit production secrets or customer telemetry to the demo API. See [SECURITY.md](SECURITY.md).
-
-## Contributing
-
-Contributions are welcome for defensive detections, synthetic datasets, ATT&CK mappings, explainability, tests, and safe integrations. Read [CONTRIBUTING.md](CONTRIBUTING.md) and run `pytest -q` before opening a pull request.
-
-## License
-
-Distributed under the [MIT License](LICENSE).
+Contributions are welcome under [CONTRIBUTING.md](CONTRIBUTING.md). This project is licensed under the [MIT License](LICENSE).
