@@ -25,6 +25,16 @@ The repository combines a runnable investigation engine, repeatable experiments,
 
 > **Research boundary:** all checked-in telemetry is synthetic. Offline results are regression-test evidence—not a production effectiveness claim. The platform recommends actions but never executes containment autonomously.
 
+## 60-second reviewer path
+
+Short on time? Review the project in this order:
+
+1. [Understand the SOC investigation problem](#why-this-project).
+2. [Inspect the implemented capabilities](#what-is-included).
+3. [Follow the evidence and trust architecture](#architecture).
+4. [Review the measured research snapshot](#research-snapshot).
+5. [Run an investigation locally](#quick-start).
+
 ## Why this project?
 
 Traditional alert pipelines often stop at “high severity.” An investigation needs to answer more useful questions:
