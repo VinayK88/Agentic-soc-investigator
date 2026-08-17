@@ -19,6 +19,8 @@
 
 ---
 
+![Agentic SOC Investigator dashboard preview](assets/dashboard-preview.svg)
+
 An evidence-first applied AI security research platform for investigating identity, endpoint, cloud, and OAuth attacks. It turns normalized telemetry into auditable findings: every verdict links to supporting events, competing hypotheses, an entity-event graph, MITRE ATT&CK techniques, and human-approved response recommendations.
 
 The repository combines a runnable investigation engine, repeatable experiments, defensive KQL, a read-only Microsoft Defender connector, FastAPI endpoints, and a compact analyst workbench.
